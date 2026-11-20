@@ -1,0 +1,1177 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>我的世界教学 · LaBubu启动器研究部</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --bg:#06101f;
+    --card:rgba(30,79,168,.13);
+    --card-h:rgba(37,99,235,.2);
+    --line:rgba(96,165,250,.22);
+    --line-s:rgba(96,165,250,.45);
+    --blue:#3b82f6;
+    --blue-l:#60a5fa;
+    --blue-x:#93c5fd;
+    --blue-d:#1e40af;
+    --text:#dbeafe;
+    --muted:#93b4e6;
+    --ok:#34d399;
+    --warn:#fbbf24;
+  }
+  html{scroll-behavior:smooth}
+  body{
+    font-family:"Segoe UI","Microsoft YaHei",system-ui,-apple-system,sans-serif;
+    color:var(--text);
+    min-height:100vh;
+    background:
+      radial-gradient(circle at 10% 0%, #14315f 0%, transparent 45%),
+      radial-gradient(circle at 92% 100%, #10305a 0%, transparent 45%),
+      #06101f;
+    background-attachment:fixed;
+  }
+  /* 网格底纹 */
+  body::before{
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+    background-image:
+      linear-gradient(rgba(96,165,250,.045) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(96,165,250,.045) 1px,transparent 1px);
+    background-size:46px 46px;
+    mask-image:radial-gradient(circle at 50% 12%,#000 0%,transparent 78%);
+    -webkit-mask-image:radial-gradient(circle at 50% 12%,#000 0%,transparent 78%);
+  }
+
+  /* ============ 顶部阅读进度 ============ */
+  #progress{
+    position:fixed;top:0;left:0;height:3px;width:0;z-index:100;
+    background:linear-gradient(90deg,#1d4ed8,#3b82f6,#93c5fd);
+    box-shadow:0 0 14px rgba(59,130,246,.9);
+    transition:width .1s linear;
+  }
+
+  /* ============ 顶栏 ============ */
+  header{
+    position:sticky;top:0;z-index:50;
+    display:flex;align-items:center;gap:14px;
+    padding:11px 24px;
+    background:rgba(6,16,31,.86);
+    backdrop-filter:blur(14px);
+    -webkit-backdrop-filter:blur(14px);
+    border-bottom:1px solid var(--line);
+  }
+  .logo{
+    width:42px;height:42px;border-radius:12px;object-fit:cover;flex:0 0 auto;
+    box-shadow:0 0 0 1px var(--line), 0 6px 22px rgba(37,99,235,.5);
+    background:#123258;
+  }
+  .brand{
+    font-size:18px;font-weight:700;letter-spacing:.5px;white-space:nowrap;
+    background:linear-gradient(90deg,#e0edff,#93c5fd,#3b82f6);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .search-box{
+    margin-left:auto;position:relative;display:flex;align-items:center;
+  }
+  .search-box input{
+    width:230px;padding:9px 14px 9px 36px;
+    font-family:inherit;font-size:13.5px;color:var(--text);
+    background:rgba(13,30,61,.85);
+    border:1px solid var(--line);border-radius:10px;
+    outline:none;transition:.22s;
+  }
+  .search-box input::placeholder{color:#5f81b5}
+  .search-box input:focus{
+    border-color:var(--blue-l);width:270px;
+    box-shadow:0 0 0 3px rgba(59,130,246,.2),0 0 20px rgba(59,130,246,.25);
+  }
+  .search-box .s-ico{
+    position:absolute;left:12px;font-size:13px;color:#5f81b5;pointer-events:none;
+  }
+  .tag{
+    font-size:12.5px;color:var(--muted);white-space:nowrap;
+    border:1px solid var(--line);padding:6px 13px;border-radius:999px;
+    background:rgba(37,99,235,.12);
+  }
+
+  /* ============ 布局 ============ */
+  main{
+    position:relative;z-index:1;
+    display:grid;grid-template-columns:240px minmax(0,1fr);gap:28px;
+    max-width:1280px;margin:0 auto;padding:26px 22px 80px;
+  }
+
+  /* ============ 侧边栏 ============ */
+  .sidebar{
+    position:sticky;top:82px;align-self:start;
+    display:flex;flex-direction:column;gap:6px;
+  }
+  .side-label{
+    font-size:11.5px;letter-spacing:2px;color:#4f74ad;
+    padding:6px 14px 2px;text-transform:uppercase;
+  }
+  .nav-link{
+    display:flex;align-items:center;gap:10px;
+    padding:12px 15px;width:100%;position:relative;
+    font-family:inherit;font-size:14.5px;text-align:left;
+    color:var(--muted);text-decoration:none;
+    background:transparent;border:1px solid transparent;border-radius:12px;
+    cursor:pointer;transition:.22s;overflow:hidden;
+  }
+  .nav-link:hover{background:rgba(37,99,235,.16);color:#eaf3ff;transform:translateX(3px)}
+  .nav-link.active{
+    background:linear-gradient(90deg,rgba(37,99,235,.55),rgba(37,99,235,.08));
+    color:#fff;border-color:rgba(96,165,250,.5);
+    box-shadow:inset 3px 0 0 var(--blue-x),0 6px 20px rgba(37,99,235,.22);
+  }
+  .nav-link.external{
+    margin-top:8px;color:#bfdbfe;
+    border:1px dashed rgba(96,165,250,.5);
+    background:rgba(37,99,235,.12);
+  }
+  .nav-link.external:hover{
+    background:linear-gradient(90deg,#1d4ed8,#3b82f6);
+    color:#fff;border-style:solid;transform:translateX(0);
+    box-shadow:0 10px 26px rgba(37,99,235,.45);
+  }
+  .nav-link .ico{font-size:16px;line-height:1;flex:0 0 auto}
+  .side-foot{
+    margin-top:16px;padding:12px 14px;border-radius:12px;
+    border:1px solid var(--line);background:rgba(13,30,61,.6);
+    font-size:12px;color:#5f81b5;line-height:1.7;
+  }
+  .side-foot b{color:var(--blue-x);font-weight:600}
+
+  /* ============ 内容区 ============ */
+  .page{display:none}
+  .page.active{display:block;animation:fade .38s cubic-bezier(.2,.7,.3,1)}
+  @keyframes fade{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+
+  .hero{
+    padding:26px 26px 22px;margin-bottom:20px;border-radius:18px;
+    background:
+      radial-gradient(circle at 100% 0%,rgba(59,130,246,.28),transparent 55%),
+      linear-gradient(180deg,rgba(30,79,168,.24),rgba(13,30,61,.5));
+    border:1px solid var(--line);
+    position:relative;overflow:hidden;
+  }
+  .hero::after{
+    content:"";position:absolute;right:-40px;top:-40px;width:180px;height:180px;
+    border-radius:50%;background:radial-gradient(circle,rgba(96,165,250,.28),transparent 70%);
+    pointer-events:none;
+  }
+  .hero h1{font-size:28px;color:#f0f7ff;margin-bottom:8px;letter-spacing:.5px}
+  .hero .sub{color:var(--muted);font-size:14.5px;max-width:660px;line-height:1.8}
+  .badges{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+  .badge{
+    font-size:12px;padding:5px 12px;border-radius:999px;
+    color:#bfdbfe;background:rgba(59,130,246,.18);
+    border:1px solid rgba(96,165,250,.32);
+  }
+  .badge.ok{color:#a7f3d0;background:rgba(52,211,153,.14);border-color:rgba(52,211,153,.35)}
+
+  .card{
+    position:relative;
+    background:linear-gradient(180deg,var(--card),rgba(13,30,61,.5));
+    border:1px solid var(--line);border-radius:16px;
+    padding:22px 24px;margin-bottom:18px;
+    transition:.26s cubic-bezier(.2,.7,.3,1);
+    overflow:hidden;
+  }
+  .card::before{
+    content:"";position:absolute;left:0;top:0;height:2px;width:100%;
+    background:linear-gradient(90deg,transparent,rgba(96,165,250,.7),transparent);
+    opacity:0;transition:.3s;
+  }
+  .card:hover{
+    border-color:var(--line-s);transform:translateY(-3px);
+    box-shadow:0 14px 38px rgba(37,99,235,.2);
+  }
+  .card:hover::before{opacity:1}
+
+  h2{
+    display:flex;align-items:center;gap:11px;
+    font-size:17.5px;color:#cfe2ff;margin-bottom:14px;
+  }
+  .num{
+    display:inline-flex;align-items:center;justify-content:center;
+    width:26px;height:26px;flex:0 0 auto;border-radius:8px;
+    font-size:12.5px;font-weight:700;color:#fff;
+    background:linear-gradient(135deg,#1d4ed8,#3b82f6);
+    box-shadow:0 3px 12px rgba(37,99,235,.5);
+  }
+  h3{font-size:14.5px;color:#a5c8ff;margin:18px 0 8px;display:flex;align-items:center;gap:7px}
+  h3::before{content:"▸";color:var(--blue)}
+  p,li{line-height:1.95;color:#c9dbf5;font-size:14.5px}
+  ul,ol{margin:10px 0 0 20px}
+  li::marker{color:var(--blue-l)}
+  li+li{margin-top:4px}
+  p+p{margin-top:10px}
+  b{color:#e2eeff}
+
+  /* 按键 */
+  kbd{
+    display:inline-block;min-width:2em;text-align:center;
+    padding:4px 9px;font-family:ui-monospace,Consolas,monospace;
+    font-size:12.5px;font-weight:600;color:#cfe2ff;white-space:nowrap;
+    background:linear-gradient(180deg,#1e3a8a,#152a55);
+    border:1px solid rgba(96,165,250,.45);border-bottom-width:3px;
+    border-radius:7px;vertical-align:middle;
+    box-shadow:0 2px 0 rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.12);
+  }
+  .key-grid{display:grid;gap:10px;margin-top:6px}
+  .key-item{
+    display:flex;align-items:center;gap:16px;
+    padding:12px 16px;border-radius:12px;
+    background:rgba(13,30,61,.62);
+    border:1px solid rgba(96,165,250,.16);
+    transition:.2s;
+  }
+  .key-item:hover{background:rgba(37,99,235,.18);border-color:var(--line-s);transform:translateX(3px)}
+  .keys{display:flex;gap:6px;flex-wrap:wrap;flex:0 0 auto;min-width:158px}
+  .key-item span{color:#d5e6ff;font-size:14.5px;line-height:1.6}
+
+  /* 代码 */
+  pre{
+    background:#040b18;
+    border:1px solid var(--line);border-left:3px solid var(--blue);
+    border-radius:10px;padding:15px 17px;margin-top:12px;
+    overflow-x:auto;
+    font-family:ui-monospace,Consolas,"Courier New",monospace;
+    font-size:13.5px;line-height:1.8;color:#a5c8ff;
+  }
+  pre::-webkit-scrollbar{height:8px}
+  pre::-webkit-scrollbar-thumb{background:rgba(96,165,250,.35);border-radius:4px}
+  pre .c{color:#5b7fb8;font-style:italic}
+  pre .k{color:#7dd3fc}
+  pre .v{color:#fbbf24}
+  p code,li code,td code{
+    background:rgba(37,99,235,.24);color:#bfdbfe;
+    padding:2px 6px;border-radius:5px;
+    font-family:ui-monospace,Consolas,monospace;font-size:13px;
+    white-space:nowrap;
+  }
+
+  /* 表格 */
+  .table-wrap{overflow-x:auto;border-radius:12px;border:1px solid var(--line);margin-top:14px}
+  .table-wrap::-webkit-scrollbar{height:8px}
+  .table-wrap::-webkit-scrollbar-thumb{background:rgba(96,165,250,.35);border-radius:4px}
+  table{width:100%;border-collapse:collapse;font-size:13.8px;min-width:420px}
+  th,td{padding:11px 14px;text-align:left;border-bottom:1px solid rgba(96,165,250,.14)}
+  th{color:#93c5fd;font-weight:600;background:rgba(37,99,235,.2);white-space:nowrap}
+  tbody tr{transition:.15s}
+  tbody tr:nth-child(even){background:rgba(37,99,235,.045)}
+  tbody tr:hover{background:rgba(37,99,235,.14)}
+  tbody tr:last-child td{border-bottom:none}
+
+  /* 提示框 */
+  .tip{
+    margin-top:15px;padding:13px 16px;border-radius:11px;
+    background:rgba(37,99,235,.14);
+    border:1px solid rgba(96,165,250,.35);
+    border-left:4px solid var(--blue-l);
+    font-size:14px;color:#cfe2ff;line-height:1.85;
+  }
+  .tip.warn{
+    background:rgba(251,191,36,.09);
+    border-color:rgba(251,191,36,.35);border-left-color:var(--warn);
+    color:#fde9b5;
+  }
+  .tip.ok{
+    background:rgba(52,211,153,.09);
+    border-color:rgba(52,211,153,.32);border-left-color:var(--ok);
+    color:#c4f5e0;
+  }
+
+  /* 折叠 FAQ */
+  details{
+    margin-top:12px;border:1px solid var(--line);border-radius:12px;
+    background:rgba(13,30,61,.55);overflow:hidden;transition:.2s;
+  }
+  details[open]{border-color:var(--line-s);background:rgba(37,99,235,.12)}
+  summary{
+    padding:13px 17px;cursor:pointer;font-size:14.2px;color:#cfe2ff;
+    list-style:none;display:flex;align-items:center;gap:9px;transition:.2s;
+  }
+  summary::-webkit-details-marker{display:none}
+  summary::before{
+    content:"＋";color:var(--blue-l);font-weight:700;font-size:14px;
+    transition:.25s;display:inline-block;
+  }
+  details[open] summary::before{content:"－"}
+  summary:hover{color:#fff;background:rgba(37,99,235,.12)}
+  details .body{padding:0 17px 15px 40px;font-size:14px;color:#c0d5f0;line-height:1.9}
+
+  /* 外链按钮 */
+  .hero-link{
+    display:flex;align-items:center;justify-content:center;gap:12px;
+    margin-top:18px;padding:19px 22px;border-radius:14px;
+    font-size:16.5px;font-weight:700;color:#fff;text-decoration:none;
+    background:linear-gradient(90deg,#1d4ed8,#3b82f6,#60a5fa);
+    background-size:200% 100%;
+    box-shadow:0 12px 34px rgba(37,99,235,.45);
+    transition:.28s;
+  }
+  .hero-link:hover{
+    background-position:100% 0;transform:translateY(-3px);
+    box-shadow:0 18px 44px rgba(37,99,235,.62);
+  }
+
+  /* 回到顶部 */
+  #top{
+    position:fixed;right:24px;bottom:26px;z-index:60;
+    width:46px;height:46px;border-radius:14px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    font-size:18px;color:#dbeafe;
+    background:linear-gradient(135deg,#1d4ed8,#3b82f6);
+    border:1px solid rgba(147,197,253,.4);
+    box-shadow:0 10px 28px rgba(37,99,235,.5);
+    opacity:0;visibility:hidden;transform:translateY(14px);
+    transition:.3s;
+  }
+  #top.show{opacity:1;visibility:visible;transform:none}
+  #top:hover{transform:translateY(-3px);box-shadow:0 14px 34px rgba(37,99,235,.7)}
+
+  /* 响应式 */
+  @media (max-width:900px){
+    main{grid-template-columns:1fr;gap:18px;padding:18px 14px 70px}
+    .sidebar{
+      position:sticky;top:64px;z-index:40;
+      flex-direction:row;overflow-x:auto;padding:8px 4px;
+      background:rgba(6,16,31,.92);
+      backdrop-filter:blur(12px);
+      border-bottom:1px solid var(--line);
+      margin:-18px -14px 0;padding-left:14px;padding-right:14px;
+      scrollbar-width:none;
+    }
+    .sidebar::-webkit-scrollbar{display:none}
+    .side-label,.side-foot{display:none}
+    .nav-link{white-space:nowrap;width:auto;padding:9px 13px;font-size:13.5px}
+    .nav-link:hover{transform:none}
+    .nav-link.external{margin-top:0}
+    .tag,.search-box{display:none}
+    .hero{padding:20px 18px}
+    .hero h1{font-size:23px}
+    .card{padding:18px 16px}
+    .key-item{flex-direction:column;align-items:flex-start;gap:9px}
+    .keys{min-width:0}
+    #top{right:16px;bottom:18px;width:42px;height:42px}
+  }
+</style>
+</head>
+<body>
+
+<div id="progress"></div>
+
+<!-- ================= 顶栏 ================= -->
+<header>
+  <img src="pcl.png" alt="PCL" class="logo">
+  <div class="brand">LaBubu启动器研究部</div>
+  <div class="search-box">
+    <span class="s-ico">🔍</span>
+    <input id="search" type="text" placeholder="搜索当前页内容…  按 / 聚焦">
+  </div>
+  <div class="tag">我的世界 · 教学中心</div>
+</header>
+
+<main>
+  <!-- ================= 侧边导航 ================= -->
+  <nav class="sidebar">
+    <div class="side-label">教学模块</div>
+    <button class="nav-link active" data-page="page-keys"><span class="ico">⌨️</span>基础键位教学</button>
+    <button class="nav-link" data-page="page-play"><span class="ico">🧱</span>基础玩法教学</button>
+    <button class="nav-link" data-page="page-code"><span class="ico">💻</span>代码教学</button>
+    <button class="nav-link" data-page="page-adv"><span class="ico">⚔️</span>高级玩法</button>
+
+    <div class="side-label" style="margin-top:14px">友情链接</div>
+    <a class="nav-link external" href="https://dingding1021.github.io/a4" target="_blank" rel="noopener">
+      <span class="ico">🌐</span>进入神秘人的应用官网
+    </a>
+
+    <div class="side-foot">
+      版本 <b>v2.0</b> · 内容持续更新<br>
+      共 <b>4</b> 大模块 · <b>40+</b> 知识点
+    </div>
+  </nav>
+
+  <div class="content">
+
+    <!-- =========================================================
+         1. 基础键位教学
+    ========================================================== -->
+    <section class="page active" id="page-keys">
+      <div class="hero">
+        <h1>基础键位教学</h1>
+        <p class="sub">先把这些按键记熟，你就能在方块世界里自由行走啦。键位均为默认设置，可在「选项 → 控制」中自定义。</p>
+        <div class="badges">
+          <span class="badge">Java 版默认键位</span>
+          <span class="badge">共 5 组分类</span>
+          <span class="badge ok">新手必看</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2><span class="num">01</span>移动与视角</h2>
+        <div class="key-grid">
+          <div class="key-item"><div class="keys"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></div><span>前 / 左 / 后 / 右 移动</span></div>
+          <div class="key-item"><div class="keys"><kbd>鼠标</kbd></div><span>转动视角、瞄准方块</span></div>
+          <div class="key-item"><div class="keys"><kbd>空格</kbd></div><span>跳跃 / 在水中上浮 / 骑乘时跳跃</span></div>
+          <div class="key-item"><div class="keys"><kbd>Shift</kbd></div><span>潜行（不会从方块边缘掉下去）/ 水中下潜</span></div>
+          <div class="key-item"><div class="keys"><kbd>Ctrl</kbd></div><span>疾跑（也可双击 <kbd>W</kbd>，会消耗饥饿值）</span></div>
+          <div class="key-item"><div class="keys"><kbd>F5</kbd></div><span>切换第一 / 第三人称（背面 / 正面）视角</span></div>
+          <div class="key-item"><div class="keys"><kbd>F3</kbd></div><span>打开调试信息（坐标、FPS、区块、朝向）</span></div>
+          <div class="key-item"><div class="keys"><kbd>F2</kbd></div><span>截图，保存在 <code>screenshots</code> 文件夹</span></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2><span class="num">02</span>方块交互</h2>
+        <div class="key-grid">
+          <div class="key-item"><div class="keys"><kbd>左键</kbd></div><span>挖掘方块 / 攻击生物（长按可连续挖）</span></div>
+          <div class="key-item"><div class="keys"><kbd>右键</kbd></div><span>放置方块 / 使用物品 / 打开箱子、工作台、熔炉</span></div>
+          <div class="key-item"><div class="keys"><kbd>中键</kbd></div><span>复制准星对准的方块（创造模式）</span></div>
+          <div class="key-item"><div class="keys"><kbd>1</kbd> <kbd>~</kbd> <kbd>9</kbd></div><span>选择快捷栏第 1~9 格</span></div>
+          <div class="key-item"><div class="keys"><kbd>滚轮</kbd></div><span>切换快捷栏物品</span></div>
+          <div class="key-item"><div class="keys"><kbd>E</kbd></div><span>打开 / 关闭背包</span></div>
+          <div class="key-item"><div class="keys"><kbd>Q</kbd></div><span>丢弃 1 个物品；<kbd>Ctrl</kbd>+<kbd>Q</kbd> 丢弃整组</span></div>
+          <div class="key-item"><div class="keys"><kbd>F</kbd></div><span>交换主手 / 副手物品</span></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2><span class="num">03</span>界面与社交</h2>
+        <div class="key-grid">
+          <div class="key-item"><div class="keys"><kbd>T</kbd></div><span>打开聊天框（也可以输入命令）</span></div>
+          <div class="key-item"><div class="keys"><kbd>/</kbd></div><span>直接打开命令输入框</span></div>
+          <div class="key-item"><div class="keys"><kbd>Tab</kbd></div><span>聊天时自动补全玩家名 / 命令 / 坐标</span></div>
+          <div class="key-item"><div class="keys"><kbd>↑</kbd><kbd>↓</kbd></div><span>翻看历史聊天记录</span></div>
+          <div class="key-item"><div class="keys"><kbd>F1</kbd></div><span>隐藏 HUD 界面（截图专用）</span></div>
+          <div class="key-item"><div class="keys"><kbd>F11</kbd></div><span>全屏 / 窗口模式切换</span></div>
+          <div class="key-item"><div class="keys"><kbd>Esc</kbd></div><span>暂停菜单（设置、存档、退出）</span></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2><span class="num">04</span>创造模式专属</h2>
+        <div class="key-grid">
+          <div class="key-item"><div class="keys">双击 <kbd>空格</kbd></div><span>开启 / 关闭飞行</span></div>
+          <div class="key-item"><div class="keys"><kbd>空格</kbd> / <kbd>Shift</kbd></div><span>飞行时上升 / 下降</span></div>
+          <div class="key-item"><div class="keys"><kbd>Ctrl</kbd></div><span>飞行时加速</span></div>
+          <div class="key-item"><div class="keys"><kbd>E</kbd></div><span>打开创造物品栏，可搜索任意物品</span></div>
+          <div class="key-item"><div class="keys"><kbd>中键</kbd></div><span>复制方块（含方块状态）</span></div>
+        </div>
+        <div class="tip">💡 创造模式下用 <kbd>中键</kbd> 拾取方块后，放进快捷栏可以像生存一样快速建造。</div>
+      </div>
+
+      <div class="card">
+        <h2><span class="num">05</span>特殊状态操作</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>场景</th><th>操作方式</th></tr></thead>
+            <tbody>
+              <tr><td>骑马 / 骑猪</td><td>骑马用 <kbd>空格</kbd> 跳跃；骑猪需手持胡萝卜钓竿，右键加速</td></tr>
+              <tr><td>划船</td><td><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> 控制方向，<kbd>Shift</kbd> 下船</td></tr>
+              <tr><td>矿车</td><td><kbd>Shift</kbd> 下车，视角可自由转动</td></tr>
+              <tr><td>梯子 / 藤蔓</td><td>贴住后按 <kbd>W</kbd> 向上爬</td></tr>
+              <tr><td>游泳</td><td>进入水中后疾跑可触发游泳姿态，速度更快</td></tr>
+              <tr><td>鞘翅飞行</td><td>高空跳下后按 <kbd>空格</kbd> 展开，用鼠标控制俯仰</td></tr>
+              <tr><td>爬行</td><td>在 1 格高空间内会自动爬行（Java 1.14+）</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2><span class="num">06</span>F3 调试信息速读</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>字段</th><th>含义</th></tr></thead>
+            <tbody>
+              <tr><td><code>XYZ</code></td><td>你的精确坐标，迷路时最关键的数据</td></tr>
+              <tr><td><code>Block</code></td><td>你脚下所处方块的坐标</td></tr>
+              <tr><td><code>Chunk</code></td><td>区块相对坐标，用于定位区块加载</td></tr>
+              <tr><td><code>Facing</code></td><td>朝向（north / south / east / west），后面是水平角度</td></tr>
+              <tr><td><code>Biome</code></td><td>当前所处生物群系</td></tr>
+              <tr><td><code>Light</code></td><td>光照等级，低于 8 的方块面可能刷怪</td></tr>
+              <tr><td><code>FPS</code></td><td>帧率，低于 30 建议降低渲染距离</td></tr>
+              <tr><td><code>Day</code></td><td>游戏内天数与当前时间</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="tip warn">⚠️ 按 <kbd>F3</kbd> 后再按 <kbd>F3</kbd> 打开设置界面，<kbd>F3</kbd>+<kbd>G</kbd> 可切换区块边界显示，<kbd>F3</kbd>+<kbd>B</kbd> 显示实体碰撞箱。</div>
+      </div>
+    </section>
+
+    <!-- =========================================================
+         2. 基础玩法教学
+    ========================================================== -->
+    <section class="page" id="page-play">
+      <div class="hero">
+        <h1>基础玩法教学</h1>
+        <p class="sub">从一棵树开始，一步步活过第一夜，再到建造属于自己的基地。</p>
+        <div class="badges">
+          <span class="badge">生存模式</span>
+          <span class="badge">10 个知识卡</span>
+          <span class="badge ok">零基础友好</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2><span class="num">01</span>第一夜生存时间线</h2>
+        <ol>
+          <li><b>0~2 分钟｜撸树</b>：长按左键收集 4~6 个原木。</li>
+          <li><b>2~4 分钟｜做工作台</b>：原木 → 木板 → 4 木板合成工作台。</li>
+          <li><b>4~8 分钟｜做木镐</b>：木板 + 木棍，挖 3 个石头升级石镐。</li>
+          <li><b>8~12 分钟｜找煤或烧木炭</b>：做火把，保证基地周围亮度充足。</li>
+          <li><b>12~15 分钟｜造简易庇护所</b>：挖山洞或用泥土围一个 3×3 小屋。</li>
+          <li><b>15 分钟+｜做床</b>：3 羊毛 + 3 木板，右键睡觉跳过夜晚并设置重生点。</li>
+        </ol>
+        <div class="tip">⏰ 游戏内一天约 20 分钟（白天 10 分钟、夜晚 7 分钟、黄昏黎明各 1.5 分钟）。看到天空变橙就该回家了。</div>
+      </div>
+
+      <div class="card">
+        <h2><span class="num">02</span>工具材质等级</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>材质</th><th>耐久</th><th>挖掘速度</th><th>可挖掘的最高矿物</th></tr></thead>
+            <tbody>
+              <tr><td>木</td><td>59</td><td>2×</td><td>煤矿石</td></tr>
+              <tr><td>石</td><td>131</td><td>4×</td><td>铁矿石、青金石</td></tr>
+              <tr><td>铁</td><td>250</td><td>6×</td><td>钻石、金、绿宝石</td></tr>
+              <tr><td>钻石</td><td>1561</td><td>8×</td><td>黑曜石</td></tr>
+              <tr><td>下界合金</td><td>2031</td><td>9×</td><td>所有方块</td></tr>
+              <tr><td>金</td><td>32</td><td>12×</td><td>只能挖石头类，速度快但极易损坏</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="tip">🔨 木剑伤害 4、石剑 5、铁剑 6、钻石剑 7、下界合金剑 8（未附魔）。</div>
+      </div>
+
+      <div class="card">
+        <h2><span class="num">03</span>核心合成配方</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>物品</th><th>配方</th><th>用途</th></tr></thead>
+            <tbody>
+              <tr><td>工作台</td><td>4 个木板（2×2）</td><td>解锁 3×3 合成</td></tr>
+              <tr><td>木棍</td><td>2 个木板竖放</td><td>工具、火把、箭的原料</td></tr>
+              <tr><td>熔炉</td><td>8 个圆石（环形）</td><td>烧炼矿石、烹饪食物</td></tr>
+              <tr><td>箱子</td><td>8 个木板（环形）</td><td>存储 27 格物品</td></tr>
+              <tr><td>火把</td><td>木棍 + 煤炭 / 木炭</td><td>照明，防止刷怪</td></tr>
+              <tr><td>床</td><td>3 羊毛 + 3 木板</td><td>跳过夜晚、设置重生点</td></tr>
+              <tr><td>铁镐</td><td>3 铁锭 + 2 木棍</td><td>挖掘钻石、金、绿宝石</td></tr>
+              <tr><td>盾牌</td><td>6 木板 + 1 铁锭</td><td>格挡伤害（右键举盾）</td></tr>
+              <tr><td>附魔台</td><td>4 黑曜石 + 2 钻石 + 1 书</td><td>为装备附魔</td></tr>
+              <tr><td>铁轨</td><td>6 铁锭 + 1 木棍</td><td>矿车运输系统</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2><span class="num">04</span>矿石分布速查表</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>矿石</th><th>最佳 Y 轴</th><th>所需工具</th><th>主要用途</th></tr></thead>
+            <tbody>
+              <tr><td>煤炭</td><td>0 ~ 192</td><td>木镐以上</td><td>燃料、火把</td></tr>
+              <tr><td>铜</td><td>-16 ~ 112</td><td>石镐以上</td><td>避雷针、望远镜</td></tr>
+              <tr><td>铁</td><td>-16 ~ 56</td><td>石镐以上</td><td>铁镐、盔甲、铁轨</td></tr>
+              <tr><td>青金石</td><td>-32 ~ 32</td><td>石镐以上</td><td>附魔消耗品</td></tr>
+              <tr><td>金</td><td>-48 ~ 32</td><td>铁镐以上</td><td>金苹果、动力铁轨</td></tr>
+              <tr><td>红石</td><td>-64 ~ 16</td><td>铁镐以上</td><td>红石机械核心</td></tr>
+              <tr><td>钻石</td><td>-64 ~ 16</td><td>铁镐以上</td><td>顶级装备、附魔台</td></tr>
+              <tr><td>绿宝石</td><td>-16 ~ 320（山地）</td><td>铁镐以上</td><td>村民交易货币</td></tr>
+              <tr><td>远古残骸</td><td>下界 Y≈15</td><td>钻石镐以上</td><td>下界合金装备</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="tip ok">💎 挖钻石推荐在 <code>Y = -59</code> 附近开挖「鱼骨矿道」：主巷道每 2 格向两侧分支，视野覆盖最全面。</div>
+      </div>
+
+      <div class="card">
+        <h2><span class="num">05</span>食物与饥饿值</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>食物</th><th>回复饥饿</th><th>饱和度</th><th>备注</th></tr></thead>
+            <tbody>
+              <tr><td>面包</td><td>5</td><td>6</td><td>3 小麦合成，成本最低</td></tr>
+              <tr><td>烤马铃薯</td><td>5</td><td>6</td><td>熔炉烤制，易量产</td></tr>
+              <tr><td>熟牛肉 / 熟猪排</td><td>8</td><td>12.8</td><td>高回复，强烈推荐</td></tr>
+              <tr><td>金胡萝卜</td><td>6</td><td>14.4</td><td>饱和度最高</td></tr>
+              <tr><td>金苹果</td><td>4</td><td>9.6</td><td>附带生命恢复效果</td></tr>
+              <tr><td>附魔金苹果</td><td>4</td><td>9.6</td><td>抗性提升、防火、生命恢复</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="tip">🍖 饥饿值低于 6 格无法疾跑；饥饿值满时才会自然回血，所以保持吃饱很重要。</div>
+      </div>
+
+      <div class="card">
+        <h2><span class="num">06</span>常见生物与应对</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>生物</th><th>威胁</th><th>应对方式</th></tr></thead>
+            <tbody>
+              <tr><td>僵尸</td><td>低，会攻击村民</td><td>直接击杀；白天会自燃</td></tr>
+              <tr><td>骷髅</td><td>中，远程射击</td><td>举盾格挡，或走位近身</td></tr>
+              <tr><td>苦力怕</td><td>高，会炸毁建筑</td><td>保持距离，用弓箭击杀</td></tr>
+              <tr><td>蜘蛛</td><td>中，可爬墙</td><td>白天变为中立，夜晚击杀</td></tr>
+              <tr><td>末影人</td><td>高，瞬移攻击</td><td>不要直视眼睛；戴南瓜头可免疫</td></tr>
+              <tr><td>女巫</td><td>中，投掷负面药水</td><td>快速近身，注意躲开毒药</td></tr>
+              <tr><td>掠夺者</td><td>高，成群出现</td><td>建围墙，用弓箭与盾牌</td></tr>
+              <tr><td>守卫者</td><td>高，海底神殿</td><td>携带水下呼吸药水</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2><span class="num">07</span>村庄与村民交易</h2>
+        <ul>
+          <li><b>村民职业</b>：图书管理员、农民、铁匠、牧师、屠夫、制图师等，用工作台方块改变。</li>
+          <li><b>绿宝石</b>：主要货币，可以用小麦、纸、煤炭等换取。</li>
+          <li><b>图书管理员</b>：可交易到各种附魔书，建议刷出「经验修补」。</li>
+          <li><b>铁傀儡</b>：村庄天然守卫，也可以自己用 4 铁块 + 南瓜召唤。</li>
+          <li><b>掠夺者袭击</b>：击杀掠夺者队长后进入村庄会触发袭击，胜利后获得「村庄英雄」效果。</li>
+        </ul>
+        <div class="tip">🏘️ 找到村庄后，先记下坐标（<kbd>F3</kbd>），再建一条路连接你的基地。</div>
+      </div>
+
+      <div class="card">
+        <h2><span class="num">08</span>三大维度简介</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>维度</th><th>进入方式</th><th>特色</th></tr></thead>
+            <tbody>
+              <tr><td>主世界</td><td>出生地</td><td>资源最丰富，平原、森林、沙漠、海洋等群系</td></tr>
+              <tr><td>下界</td><td>黑曜石 4×5 门框 + 打火石</td><td>坐标 1:8 换算，可获得烈焰棒、下界合金</td></tr>
+              <tr><td>末地</td><td>末地传送门 + 12 个末影之眼</td><td>挑战末影龙，获取鞘翅与潜影贝</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="tip">🧭 下界坐标 1 格 = 主世界 8 格，利用这一点可以建造高速公路快速跨越主世界。</div>
+      </div>
+
+      <div class="card">
+        <h2><span class="num">09</span>新手常见问题</h2>
+        <details>
+          <summary>为什么我挖不动黑曜石？</summary>
+          <div class="body">黑曜石需要<b>钻石镐或下界合金镐</b>才能破坏，且挖掘时间较长（约 9.4 秒）。用水浇在岩浆源上可以生成黑曜石。</div>
+        </details>
+        <details>
+          <summary>床为什么不能睡觉？</summary>
+          <div class="body">可能是：① 附近有怪物（半径 8 格内）；② 不是夜晚或雷雨；③ 床周围没有足够空间。另外在下界和末地使用床会爆炸。</div>
+        </details>
+        <details>
+          <summary>怎么快速回家？</summary>
+          <div class="body">记录基地坐标后，使用 <code>/tp 玩家名 X Y Z</code>（需开启作弊）；或在床上睡一觉，死亡后会重生在床边。</div>
+        </details>
+        <details>
+          <summary>死了之后物品会消失吗？</summary>
+          <div class="body">物品会掉落原地，<b>5 分钟</b>内未被拾取就会消失。掉落物所在区块如果被卸载，计时会暂停。建议随身携带一个箱子或用「死亡坐标」记录。</div>
+        </details>
+        <details>
+          <summary>如何获得经验最快？</summary>
+          <div class="body">前期挖煤矿石、烧炼物品；中后期建造刷怪塔、刷末影人塔，或大量交易村民。</div>
+        </details>
+      </div>
+    </section>
+
+    <!-- =========================================================
+         3. 代码教学
+    ========================================================== -->
+    <section class="page" id="page-code">
+      <div class="hero">
+        <h1>代码教学</h1>
+        <p class="sub">用命令和 NBT，让世界完全按你的想法运转。从一条 <code>/give</code> 到完整的数据包，这里都有。</p>
+        <div class="badges">
+          <span class="badge">命令系统</span>
+          <span class="badge">NBT / JSON</span>
+          <span class="badge">数据包</span>
+          <span class="badge ok">进阶必学</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2><span class="num">01</span>命令基础语法</h2>
+        <ul>
+          <li>在聊天框输入以 <code>/</code> 开头的内容，就是一条命令。</li>
+          <li>通用结构：<code>/命令 &lt;目标&gt; &lt;参数&gt;</code>，尖括号内为必填，方括号内为可选。</li>
+          <li>坐标写法：<code>~ ~ ~</code> 表示相对当前位置，<code>^ ^ ^</code> 表示朝向相对。</li>
+          <li>数字后缀 <code>1.5</code>、<code>d</code>、<code>s</code> 分别代表倍数、天、秒。</li>
+          <li>开启作弊：创建世界时勾选「允许作弊」，或在服务器 <code>server.properties</code> 中设置 <code>enable-command-block=true</code>。</li>
+        </ul>
+        <pre><span class="c">// 一条最简单的命令：给自己 64 个钻石</span>
+/give @p diamond 64</pre>
+      </div>
+
+      <div class="card">
+        <h2><span class="num">02</span>目标选择器</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>选择器</th><th>含义</th></tr></thead>
+            <tbody>
+              <tr><td><code>@p</code></td><td>最近的玩家</td></tr>
+              <tr><td><code>@r</code></td><td>随机一名玩家</td></tr>
+              <tr><td><code>@a</code></td><td>所有玩家</td></tr>
+              <tr><td><code>@s</code></td><td>命令执行者自己</td></tr>
+              <tr><td><code>@e</code></td><td>所有实体（含生物、掉落物、盔甲架）</td></tr>
+              <tr><td><code>@n</code></td><td>最近的实体（1.21+）</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <h3>常用筛选参数</h3>
+        <pre><span class="c">// 距离 10 格内的所有僵尸</span>
+@e[type=zombie,distance=..10]
+
+<span class="c">// 20 格内、手持钻石剑的玩家</span>
+@a[distance=..20,nbt={SelectedItem:{id:"minecraft:diamond_sword"}}]
+
+<span class="c">// 名字叫 Bubu 的玩家</span>
+@a[name="Bubu"]
+
+<span class="c">// 分数 kills 大于等于 10 的玩家</span>
+@a[scores={kills=10..}]
+
+<span class="c">// 排除旁观者模式</span>
+@a[gamemode=!spectator]</pre>
+      </div>
+
+      <div class="card">
+        <h2><span class="num">03</span>常用命令速查</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>命令</th><th>作用</th></tr></thead>
+            <tbody>
+              <tr><td><code>/gamemode creative</code></td><td>切换到创造模式</td></tr>
+              <tr><td><code>/give @p diamond 64</code></td><td>给自己 64 个钻石</td></tr>
+              <tr><td><code>/tp @s 100 64 100</code></td><td>传送到指定坐标</td></tr>
+              <tr><td><code>/setblock ~ ~1 ~ stone</code></td><td>在头顶放一个石头</td></tr>
+              <tr><td><code>/fill ~ ~ ~ ~10 ~ ~10 glass</code></td><td>用玻璃填充 10×10 区域</td></tr>
+              <tr><td><code>/clone ~ ~ ~ ~5 ~5 ~5 ~10 ~ ~</code></td><td>复制一块区域到另一处</td></tr>
+              <tr><td><code>/summon zombie ~ ~ ~</code></td><td>召唤一只僵尸</td></tr>
+              <tr><td><code>/time set day</code></td><td>把时间设为白天</td></tr>
+              <tr><td><code>/weather clear</code></td><td>天气转晴</td></tr>
+              <tr><td><code>/effect give @p speed 60 2</code></td><td>给予速度 II 效果，持续 60 秒</td></tr>
+              <tr><td><code>/enchant @s sharpness 5</code></td><td>给手持物品附魔锋利 V</td></tr>
+              <tr><td><code>/kill @e[type=zombie]</code></td><td>清除所有僵尸</td></tr>
+              <tr><td><code>/difficulty hard</code></td><td>设置难度为困难</td></tr>
+              <tr><td><code>/seed</code></td><td>查看世界种子</td></tr>
+              <tr><td><code>/locate structure village</code></td><td>定位最近的村庄</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2><span class="num">04</span>进阶：/execute 条件执行</h2>
+        <p><code>/execute</code> 是命令系统里最强大的工具，由「子命令链」组成：</p>
+        <pre><span class="c">// 把执行者脚下的方块换成红石块</span>
+/execute at @s run setblock ~ ~-1 ~ redstone_block
+
+<span class="c">// 给 10 格内所有僵尸点上火（Fire:200 = 10 秒）</span>
+/execute as @e[type=zombie,distance=..10] run data merge entity @s {Fire:200}
+
+<span class="c">// 只有手持钻石剑的玩家才会被传送到大厅</span>
+/execute as @a[nbt={SelectedItem:{id:"minecraft:diamond_sword"}}] run tp @s 0 64 0
+
+<span class="c">// 如果玩家在 Y=100 以上，就给他发光效果</span>
+/execute as @a at @s if entity @s[y=100,dy=200] run effect give @s glowing 10 0 true
+
+<span class="c">// 检测脚下是否为草方块</span>
+/execute if block ~ ~-1 ~ grass_block run say 你站在草地上！</pre>
+        <div class="tip">🧠 记忆口诀：<b>as</b> 改执行者，<b>at</b> 改坐标，<b>if</b> 做判断，<b>run</b> 后接真正的命令。</div>
+      </div>
+
+      <div class="card">
+        <h2><span class="num">05</span>NBT 数据基础</h2>
+        <p>NBT 是《我的世界》用来存储物品、实体、方块附加数据的格式，本质是键值对。</p>
+        <pre><span class="c">// 一把 5 级锋利 + 3 级耐久的钻石剑</span>
+/give @p diamond_sword{Enchantments:[{id:"sharpness",lvl:5},{id:"unbreaking",lvl:3}]} 1
+
+<span class="c">// 一个自定义名字的盔甲架</span>
+/summon armor_stand ~ ~ ~ {CustomName:'"Bubu"'}
+
+<span class="c">// 一个带发光效果的僵尸</span>
+/summon zombie ~ ~ ~ {Glowing:1b}
+
+<span class="c">// 修改最近实体的生命值</span>
+/data merge entity @e[limit=1,sort=nearest] {Health:20f}
+
+<span class="c">// 查看方块数据</span>
+/data get block ~ ~-1 ~</pre>
+        <div class="tip warn">⚠️ 修改前先用 <code>/data get</code> 查看现有数据，避免覆盖出错。测试请务必在创造模式的测试存档里进行。</div>
+      </div>
+
+      <div class="card">
+        <h2><span class="num">06</span>tellraw 与 JSON 文本</h2>
+        <p>用 JSON 可以做出彩色、可点击、带悬停提示的聊天信息。</p>
+        <pre><span class="c">// 一条金色加粗的公告</span>
+/tellraw @a {"text":"欢迎来到服务器！","color":"gold","bold":true}
+
+<span class="c">// 可点击的传送按钮</span>
+/tellraw @a [
+  {"text":"["},
+  {"text":"点击传送回主城","color":"aqua","bold":true,
+   "clickEvent":{"action":"run_command","value":"/tp @s 0 64 0"},
+   "hoverEvent":{"action":"show_text","contents":"把你传送到出生点"}},
+  {"text":"]"}
+]
+
+<span class="c">// 标题与副标题</span>
+/title @a title {"text":"第一章","color":"blue"}
+/title @a subtitle {"text":"初入方块世界"}</pre>
+      </div>
+
+      <div class="card">
+        <h2><span class="num">07</span>计分板 scoreboard</h2>
+        <pre><span class="c">// 新建一个计分项（击杀数）</span>
+/scoreboard objectives add kills playerKillCount "击杀数"
+
+<span class="c">// 显示在右侧边栏</span>
+/scoreboard objectives setdisplay sidebar kills
+
+<span class="c">// 手动给玩家加分</span>
+/scoreboard players add Bubu kills 1
+
+<span class="c">// 设置分数 / 重置</span>
+/scoreboard players set Bubu kills 0
+
+<span class="c">// 在下方显示一个自定义计分板</span>
+/scoreboard objectives add money dummy "金币"
+/scoreboard objectives setdisplay list money</pre>
+        <div class="tip">💰 计分板是经济系统、任务系统、成就系统的基础，几乎所有服务器玩法都会用到它。</div>
+      </div>
+
+      <div class="card">
+        <h2><span class="num">08</span>命令方块</h2>
+        <ul>
+          <li><b>获取方式</b>：<code>/give @p command_block</code></li>
+          <li><b>界面</b>：右键打开，输入命令后点击「完成」保存。</li>
+          <li><b>三种类型</b>：<b>脉冲</b>（红石触发一次）、<b>循环</b>（持续执行，可设延迟）、<b>连锁</b>（跟随前一个执行）。</li>
+          <li><b>条件</b>：无条件 / 有条件（前一个方块执行成功才运行）。</li>
+          <li><b>自动执行</b>：循环方块设为「保持开启」，即可无需红石持续运行。</li>
+        </ul>
+        <pre><span class="c">// 循环 + 无条件 + 保持开启 = 每 20 tick（1 秒）执行一次</span>
+/say 欢迎来到 LaBubu 服务器！
+
+<span class="c">// 连锁方块：接在上一条后面，做后续动作</span>
+/effect give @a regeneration 5 0 true</pre>
+      </div>
+
+      <div class="card">
+        <h2><span class="num">09</span>数据包 Datapack</h2>
+        <p>数据包可以让你把一批命令打包成「函数」，实现复杂逻辑而不用堆一堆命令方块。</p>
+        <pre>你的世界/datapacks/hello/
+├── pack.mcmeta
+└── data/
+    └── hello/
+        └── function/
+            ├── load.mcfunction
+            └── tick.mcfunction</pre>
+        <h3>pack.mcmeta 内容</h3>
+        <pre>{
+  "pack": {
+    "pack_format": 15,
+    "description": "LaBubu 教学示例数据包"
+  }
+}</pre>
+        <h3>tick.mcfunction（每 tick 自动执行）</h3>
+        <pre><span class="c"># 每 tick 给所有玩家 1 秒饱和效果</span>
+effect give @a saturation 1 0 true
+
+<span class="c"># 每 tick 检测玩家是否到达 Y=200</span>
+execute as @a at @s if entity @s[y=200,dy=100] run title @s title "你飞得太高啦！"</pre>
+        <div class="tip ok">📦 加载方式：把文件夹放进存档的 <code>datapacks</code> 目录，然后在游戏中执行 <code>/reload</code>。</div>
+      </div>
+
+      <div class="card">
+        <h2><span class="num">10</span>学习路线建议</h2>
+        <ol>
+          <li><b>第 1 周</b>：熟悉 <code>/give</code>、<code>/tp</code>、<code>/setblock</code>、<code>/fill</code> 等基础命令。</li>
+          <li><b>第 2 周</b>：掌握目标选择器与 <code>/execute</code>。</li>
+          <li><b>第 3 周</b>：学习 NBT 与 <code>/data</code>，能自定义物品与实体。</li>
+          <li><b>第 4 周</b>：用命令方块搭出第一个小游戏（如跑酷计时）。</li>
+          <li><b>进阶</b>：学习数据包，把命令组织成函数与标签。</li>
+          <li><b>再进阶</b>：接触服务器插件（Bukkit / Spigot）或模组开发（Fabric / Forge）。</li>
+        </ol>
+        <div class="tip">📚 官方 Wiki 是最权威的参考：<code>minecraft.wiki</code>，遇到不认识的命令语法先去查。</div>
+      </div>
+    </section>
+
+    <!-- =========================================================
+         4. 高级玩法
+    ========================================================== -->
+    <section class="page" id="page-adv">
+      <div class="hero">
+        <h1>高级玩法</h1>
+        <p class="sub">红石、附魔、下界与末地，真正的冒险从这里开始。这一页适合已经活过第一夜的玩家。</p>
+        <div class="badges">
+          <span class="badge">红石工程</span>
+          <span class="badge">附魔酿造</span>
+          <span class="badge">Boss 攻略</span>
+          <span class="badge ok">进阶内容</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2><span class="num">01</span>红石元件一览</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>元件</th><th>作用</th></tr></thead>
+            <tbody>
+              <tr><td>红石粉</td><td>传输信号，最远 15 格，可爬墙向上</td></tr>
+              <tr><td>红石火把</td><td>持续输出 15 级信号，可作为反相器</td></tr>
+              <tr><td>拉杆 / 按钮</td><td>手动开关信号源（按钮有木/石之分）</td></tr>
+              <tr><td>压力板 / 绊线</td><td>玩家或实体经过时触发</td></tr>
+              <tr><td>中继器</td><td>延长信号、增加延迟（1~4 tick）、单向传输</td></tr>
+              <tr><td>比较器</td><td>比较信号强度，可做物品检测与循环</td></tr>
+              <tr><td>活塞 / 粘性活塞</td><td>推动方块；粘性活塞还能拉回方块</td></tr>
+              <tr><td>发射器 / 投掷器</td><td>发射物品或实体；投掷器只转移物品</td></tr>
+              <tr><td>观察者</td><td>检测方块状态变化，输出 1 tick 脉冲</td></tr>
+              <tr><td>侦测铁轨</td><td>检测矿车经过，输出信号</td></tr>
+              <tr><td>红石灯</td><td>受信号点亮，可做照明或指示灯</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2><span class="num">02</span>经典红石装置</h2>
+        <ul>
+          <li><b>自动门</b>：压力板 + 红石粉 + 活塞，玩家靠近自动开门。</li>
+          <li><b>隐藏楼梯</b>：粘性活塞推动方块，实现地下入口。</li>
+          <li><b>自动农场</b>：观察者检测作物成熟 → 触发活塞收割 → 漏斗矿车收集。</li>
+          <li><b>刷怪塔</b>：高空平台 + 水流集中 + 漏斗收集，稳定产出经验与掉落物。</li>
+          <li><b>自动熔炉组</b>：漏斗进料，另一侧漏斗回收成品，可串联成 8 连炉。</li>
+          <li><b>红石时钟</b>：中继器环形连接，产生固定频率脉冲，用于定时器。</li>
+          <li><b>甘蔗机 / 竹子机</b>：观察者检测生长，活塞一键收割。</li>
+        </ul>
+        <div class="tip">🔧 建造红石装置时，先在地面上用创造模式测试，确认逻辑无误后再搬到生存存档。</div>
+      </div>
+
+      <div class="card">
+        <h2><span class="num">03</span>附魔全解</h2>
+        <p>附魔台周围摆满 15 个书架（距离 2 格，中间留空），可获得最高 30 级附魔。</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>附魔</th><th>最高等级</th><th>适用装备</th><th>效果</th></tr></thead>
+            <tbody>
+              <tr><td>锋利</td><td>V</td><td>剑 / 斧</td><td>增加近战伤害</td></tr>
+              <tr><td>亡灵杀手</td><td>V</td><td>剑 / 斧</td><td>对亡灵生物额外伤害</td></tr>
+              <tr><td>保护</td><td>IV</td><td>盔甲</td><td>减少所有类型伤害</td></tr>
+              <tr><td>耐久</td><td>III</td><td>所有工具</td><td>降低耐久消耗</td></tr>
+              <tr><td>经验修补</td><td>I</td><td>所有工具</td><td>拾取经验时修复耐久</td></tr>
+              <tr><td>效率</td><td>V</td><td>镐 / 斧 / 铲</td><td>大幅提升挖掘速度</td></tr>
+              <tr><td>时运</td><td>III</td><td>镐</td><td>增加矿物掉落数量</td></tr>
+              <tr><td>精准采集</td><td>I</td><td>镐 / 斧 / 铲</td><td>掉落方块本体（如草方块、玻璃）</td></tr>
+              <tr><td>力量</td><td>V</td><td>弓</td><td>增加箭矢伤害</td></tr>
+              <tr><td>无限</td><td>I</td><td>弓</td><td>射箭不消耗箭矢</td></tr>
+              <tr><td>水下呼吸</td><td>III</td><td>头盔</td><td>延长水下憋气时间</td></tr>
+              <tr><td>深海探索者</td><td>III</td><td>靴子</td><td>提升水下移动速度</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="tip warn">⚠️ 时运与精准采集互斥；经验修补与无限（弓）互斥。铁砧合并可以叠加附魔，但花费的经验会随次数增加。</div>
+      </div>
+
+      <div class="card">
+        <h2><span class="num">04</span>药水酿造</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>药水</th><th>原料</th><th>效果</th></tr></thead>
+            <tbody>
+              <tr><td>治疗药水</td><td>闪烁的西瓜</td><td>瞬间回复生命</td></tr>
+              <tr><td>力量药水</td><td>烈焰粉</td><td>提升近战伤害</td></tr>
+              <tr><td>速度药水</td><td>糖</td><td>提升移动速度</td></tr>
+              <tr><td>夜视药水</td><td>金胡萝卜</td><td>黑暗中也看得清</td></tr>
+              <tr><td>水下呼吸药水</td><td>河豚</td><td>长时间水下活动</td></tr>
+              <tr><td>抗火药水</td><td>岩浆膏</td><td>免疫火焰与岩浆伤害</td></tr>
+              <tr><td>跳跃提升药水</td><td>兔子脚</td><td>跳得更高</td></tr>
+              <tr><td>缓慢药水（负面）</td><td>发酵蜘蛛眼</td><td>降低移动速度</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p style="margin-top:12px">基础流程：<b>水瓶</b> → 加 <b>下界疣</b> 得到「粗制的药水」 → 加对应原料 → 加 <b>火药</b> 变为喷溅型，或加 <b>龙息</b> 变为滞留型。</p>
+      </div>
+
+      <div class="card">
+        <h2><span class="num">05</span>下界速通流程</h2>
+        <ol>
+          <li>准备 10 个黑曜石 + 打火石，搭建 4×5 下界传送门。</li>
+          <li>进入下界后先记坐标，防止迷路。</li>
+          <li>寻找 <b>下界要塞</b>，击杀烈焰人获取 <b>烈焰棒</b>（需要 6 根以上）。</li>
+          <li>在 <b>诡异森林</b> 或 <b>灵魂沙峡谷</b> 击杀末影人，收集末影珍珠。</li>
+          <li>在 Y≈15 层挖掘 <b>远古残骸</b>，用床或 TNT 爆破效率更高。</li>
+          <li>将远古残骸烧成下界合金碎片，与金锭合成下界合金锭，升级装备。</li>
+        </ol>
+        <div class="tip">🔥 在下界不要乱放床！床在下界与末地会爆炸，是双刃剑。防具记得带抗火药水。</div>
+      </div>
+
+      <div class="card">
+        <h2><span class="num">06</span>末地与末影龙攻略</h2>
+        <ul>
+          <li><b>开启传送门</b>：12 个末影之眼放入传送门框架的 12 个凹槽（注意朝向）。</li>
+          <li><b>末地结构</b>：黑曜石平台 + 末地石岛 + 10 座黑曜石柱（顶部有末影水晶）。</li>
+          <li><b>第一阶段</b>：先破坏所有末影水晶（可以用弓射，或搭柱子近战）。</li>
+          <li><b>第二阶段</b>：末影龙会俯冲，站在柱子下躲避；在龙栖息处放床，等它落下时右键引爆（经典速通技巧）。</li>
+          <li><b>第三阶段</b>：击杀后进入折跃门，通过末地城获得 <b>鞘翅</b> 与 <b>潜影贝</b>。</li>
+        </ul>
+        <div class="tip ok">🪂 鞘翅 + 烟花火箭是后期最快的赶路方式，配合「耐久 III + 经验修补」几乎不会损坏。</div>
+      </div>
+
+      <div class="card">
+        <h2><span class="num">07</span>自动化与效率</h2>
+        <ul>
+          <li><b>刷怪塔</b>：建在海洋或高空，利用刷怪机制集中掉落。</li>
+          <li><b>村民交易大厅</b>：多个图书管理员同时交易，刷附魔书效率极高。</li>
+          <li><b>全自动农场</b>：小麦、胡萝卜、马铃薯、甘蔗、竹子都能自动化。</li>
+          <li><b>钓鱼机</b>：AFK 挂机即可获得附魔书、命名牌等稀有物品。</li>
+          <li><b>铁傀儡农场</b>：村民集中 + 水流收集，稳定产出铁锭。</li>
+          <li><b>经验熔炉</b>：大量烧炼物品，集中领取经验。</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h2><span class="num">08</span>PVP 与战斗技巧</h2>
+        <ul>
+          <li><b>走位</b>：对拼时保持侧向移动，让对方难以瞄准。</li>
+          <li><b>盾牌</b>：右键举盾可格挡正面伤害，注意被斧头击中会短时间失效。</li>
+          <li><b>暴击</b>：跳跃下落时攻击会造成 1.5 倍伤害。</li>
+          <li><b>弓箭</b>：蓄力满弓伤害最高，预判对手落点。</li>
+          <li><b>末影珍珠</b>：快速位移，但会造成 5 点摔落伤害。</li>
+          <li><b>药水</b>：力量、速度、抗火、瞬间治疗都是 PVP 必备。</li>
+          <li><b>金苹果</b>：对拼时吃金苹果可以瞬间回血并提升抗性。</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h2><span class="num">09</span>建筑与地形改造</h2>
+        <ul>
+          <li><b>搭脚手架</b>：用沙子或泥土快速搭高，方便建造大型建筑。</li>
+          <li><b>地形笔刷</b>：创造模式下用 <code>/fill</code> 快速平整或挖掘地形。</li>
+          <li><b>对称建筑</b>：先搭一侧，再用 <code>/clone</code> 镜像复制。</li>
+          <li><b>光影与材质包</b>：安装 Shader 可大幅提升画面质感（需 OptiFine 或 Iris）。</li>
+          <li><b>建筑参考</b>：先从 9×9 的小屋练起，逐步扩大规模。</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h2><span class="num">10</span>性能优化与模组推荐</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>类型</th><th>推荐</th><th>说明</th></tr></thead>
+            <tbody>
+              <tr><td>优化</td><td>Sodium / Iris</td><td>Fabric 端性能优化与光影支持</td></tr>
+              <tr><td>优化</td><td>OptiFine</td><td>Forge / 原版端经典优化模组</td></tr>
+              <tr><td>辅助</td><td>JEI / REI</td><td>物品配方查询，生存必备</td></tr>
+              <tr><td>辅助</td><td>Xaero's Minimap</td><td>小地图与路径点</td></tr>
+              <tr><td>辅助</td><td>JourneyMap</td><td>地图与传送点管理</td></tr>
+              <tr><td>信息</td><td>WTHIT / Jade</td><td>显示方块与生物信息</td></tr>
+              <tr><td>玩法</td><td>Create</td><td>机械自动化，工业风大模组</td></tr>
+              <tr><td>玩法</td><td>Twilight Forest</td><td>暮色森林，全新维度冒险</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="tip">⚙️ 卡顿优化顺序：降低渲染距离 → 关闭平滑光照 → 安装 Sodium → 调整 JVM 内存参数。</div>
+      </div>
+
+      <div class="card">
+        <h2><span class="num">11</span>高手小技巧合集</h2>
+        <ul>
+          <li>落地前一瞬间倒水，可以完全免除摔落伤害。</li>
+          <li>船可以在冰上高速滑行，也可以用来「船跳」上高处。</li>
+          <li>末影珍珠能快速位移，配合摔落保护效果更安全。</li>
+          <li>在下界用床炸远古残骸，效率远高于手动挖。</li>
+          <li>把铁傀儡放在村庄边缘，可以持续产出铁锭。</li>
+          <li>用命名牌给生物命名，可以防止它被自然清除。</li>
+          <li>把物品放进潜影盒，可以大幅节省背包空间。</li>
+        </ul>
+      </div>
+
+      <div class="card" style="text-align:center">
+        <h2 style="justify-content:center"><span class="num">🌐</span>更多内容</h2>
+        <p>想了解更多关于启动器和工具的使用技巧？访问神秘人的应用官网。</p>
+        <a class="hero-link" href="https://dingding1021.github.io/a4" target="_blank" rel="noopener">
+          🚀 进入神秘人的应用官网
+        </a>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<!-- 回到顶部 -->
+<div id="top" title="回到顶部">↑</div>
+
+<script>
+  /* ---------- 导航切换 ---------- */
+  const navLinks = document.querySelectorAll('.nav-link[data-page]');
+  const pages    = document.querySelectorAll('.page');
+  const search   = document.getElementById('search');
+
+  function clearSearch(){
+    if(search) search.value = '';
+    pages.forEach(p => p.querySelectorAll('.card').forEach(c => c.style.display = ''));
+  }
+
+  navLinks.forEach(btn => {
+    btn.addEventListener('click', () => {
+      navLinks.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      pages.forEach(p => p.classList.remove('active'));
+      const target = document.getElementById(btn.dataset.page);
+      if (target) {
+        target.classList.add('active');
+        clearSearch();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    });
+  });
+
+  /* ---------- 搜索过滤（当前页） ---------- */
+  if(search){
+    search.addEventListener('input', () => {
+      const q = search.value.trim().toLowerCase();
+      const activePage = document.querySelector('.page.active');
+      if(!activePage) return;
+      activePage.querySelectorAll('.card').forEach(card => {
+        const hit = !q || card.textContent.toLowerCase().includes(q);
+        card.style.display = hit ? '' : 'none';
+      });
+    });
+
+    // 按 / 聚焦搜索框
+    document.addEventListener('keydown', e => {
+      if(e.key === '/' && document.activeElement !== search){
+        e.preventDefault();
+        search.focus();
+      }
+      if(e.key === 'Escape' && document.activeElement === search){
+        clearSearch();
+        search.blur();
+      }
+    });
+  }
+
+  /* ---------- 阅读进度 & 回到顶部 ---------- */
+  const progress = document.getElementById('progress');
+  const topBtn   = document.getElementById('top');
+
+  function onScroll(){
+    const h = document.documentElement;
+    const max = h.scrollHeight - h.clientHeight;
+    const pct = max > 0 ? (h.scrollTop / max) * 100 : 0;
+    progress.style.width = pct + '%';
+    topBtn.classList.toggle('show', h.scrollTop > 320);
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+
+  topBtn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+</script>
+</body>
+</html>
